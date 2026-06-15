@@ -1,20 +1,19 @@
-# Single-stage: build and run the Go binary from the same golang image.
-# (No multi-stage yet — slimming the final image comes later in the course.)
 FROM golang:1.22-alpine
 
 WORKDIR /app
 
-# Download deps first for better layer caching.
 COPY go.mod go.sum ./
+
+# downloads all the external Go modules listed in your go.mod file
 RUN go mod download
 
-# Build the binary.
 COPY . .
+
+# Disable Go compiler and forces to compile dependency files and put outputs to devboard-backend in current location
 RUN CGO_ENABLED=0 go build -o devboard-backend .
 
-# Run as a non-root user.
+# add user and group with UID 10001 and without password then give permission to /app of app user and app geoup
 RUN adduser -D -u 10001 app && chown -R app:app /app
 USER app
-
 EXPOSE 8080
 ENTRYPOINT ["./devboard-backend"]
