@@ -15,5 +15,6 @@ RUN CGO_ENABLED=0 go build -o devboard-backend .
 # add user and group with UID 10001 and without password then give permission to /app of app user and app geoup
 RUN adduser -D -u 10001 app && chown -R app:app /app
 USER app
+
 EXPOSE 8080
 ENTRYPOINT ["./devboard-backend"]
