@@ -8,6 +8,7 @@ WORKDIR /app
 
 # Install deps first for better layer caching (re-runs only when deps change).
 COPY package*.json ./
+# Clear install npm
 RUN npm ci
 
 # Copy the source and build the production bundle into /dist.
