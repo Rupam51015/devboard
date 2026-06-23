@@ -1,7 +1,7 @@
 # Stage 1 — build the app into static files
 FROM node:20-alpine AS build
 WORKDIR /app
-COPY package*.json ./
+COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
 RUN npm run build
@@ -9,8 +9,11 @@ RUN npm run build
 # Stage 2 — small image that only serves the build (no nginx)
 FROM node:20-alpine
 WORKDIR /app
-RUN npm install -g vite@5 && npm cache clean --force
 COPY --from=build /app/dist ./dist
-COPY vite.preview.config.js ./vite.config.js
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/package.json ./package.json
+COPY vite.preview.config.js ./vite.preview.config.js
+
 EXPOSE 4173
-CMD ["vite", "preview", "--host", "0.0.0.0", "--port", "4173"]
+
+CMD ["npx", "vite", "preview", "--host", "0.0.0.0", "--port", "4173", "--config", "vite.preview.config.js"]
