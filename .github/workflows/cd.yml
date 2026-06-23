@@ -7,7 +7,7 @@ on :
     types:
       - completed
     branches:
-      - advannced
+      - advanced
 jobs:
   deploy:
     runs-on: self-hosted
