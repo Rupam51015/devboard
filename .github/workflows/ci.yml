@@ -2,7 +2,7 @@
 name: CI
 on:
   push:
-    branches: [advanced]
+    branches: [feat/mareix-build]
 jobs:
   lint-frontend:
     runs-on: ubuntu-latest
