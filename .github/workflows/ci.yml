@@ -1,8 +1,8 @@
 # Goal : I have to Lint, Build, Test the code for Frontend & backend
 name: CI
 on:
-  push:
-    branches: [advanced]
+  workflow_dispatch:
+
 jobs:
   frontend:
     runs-on: ubuntu-latest

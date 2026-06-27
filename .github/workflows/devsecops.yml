@@ -1,0 +1,19 @@
+# Goal: Run end -to -end DevSecOps pipeline
+name: DevSecOps
+
+on:
+  push:
+    branches: [main]
+jobs:
+  code-quality:
+    uses: ./github/workflows/code-quality.yml
+
+  secret-scan:
+    uses: ./github/workflows/secret-scan.yml
+
+  dependency-scan:
+    uses: ./github/workflows/dependency-scan.yml
+
+  docker-scan:
+    uses: ./github/workflows/docker-scan.yml
+    secrets: inherit
