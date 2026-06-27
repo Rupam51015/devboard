@@ -1,4 +1,4 @@
-FROM dhi.io/golang:1-alpine AS builder
+FROM dhi.io/golang:1.25.11-alpine AS builder
 
 WORKDIR /app
 
@@ -8,7 +8,7 @@ RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 go build -o devboard-backend .
 
-FROM dhi.io/golang:1-alpine
+FROM dhi.io/golang:1.25.11-alpine
 
 WORKDIR /app
 
