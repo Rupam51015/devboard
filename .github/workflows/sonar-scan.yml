@@ -1,0 +1,16 @@
+# Goal: To check whether the application code coverage does't have security threats
+name: Sonar Scan
+on:
+  workflow_call:
+jobs:
+  sonar-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout code
+        uses: actions/chechout@v7
+
+      - name: Sonar Scan
+        uses: SonarSource/sonarqube-scan-action@v8.2.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL}}
