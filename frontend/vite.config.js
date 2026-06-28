@@ -9,16 +9,6 @@ import react from '@vitejs/plugin-react';
 //                   compose network, reachable by its service name `backend`.
 export default defineConfig({
   plugins: [react()],
-  esbuild: {
-    drop: ['console', 'debugger'],
-  },
-  optimizeDeps: {
-    esbuildOptions: {
-      supported: {
-        bigint: true,
-      },
-    },
-  },
   server: {
     host: true,
     port: 5173,
