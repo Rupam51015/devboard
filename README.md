@@ -230,41 +230,174 @@ The repository contains GitHub Actions workflows configured with SonarQube (SAST
 ## How to Install and Set Up SonarQube on EC2
 To run your own self-hosted SonarQube server on your AWS EC2 instance:
 
-**1. Start the SonarQube Container: Ensure Docker is installed on your EC2 instance, then run:
+---
+
+# 1. Start the SonarQube Container
+
+Ensure Docker is installed on your EC2 instance, then run:
+
 ```bash
 docker run -itd --name SonarQube-Server -p 9000:9000 sonarqube:community
 ```
-**2. Access the Web Interface:
 
-Make sure port ```9000``` is open in your AWS EC2 Security Group inbound rules.
-Access ```http://<YOUR_EC2_PUBLIC_IP>:9000``` in your browser.
-Log in using default credentials: Username: ```admin``` / Password: ```admin``` (you will be prompted to change it)
-How to configure SonarQube Secrets
-To enable SonarQube scanning in your GitHub Actions pipeline:
+Verify that the container is running:
 
-Get the Host URL:
-If using a self-hosted instance, your SONAR_HOST_URL is the URL where SonarQube is hosted (e.g., http://your-sonarqube-ip:9000).
-If using SonarCloud, use https://sonarcloud.io.
-Generate a SonarQube Token:
-In SonarQube: Go to your Profile (User Icon) > My Account > Security.
-Under Generate Tokens, enter a token name, select the User Token type, and click Generate.
-Copy the generated token string.
-Add Secrets to GitHub:
-Go to your GitHub Repository settings.
-Navigate to Settings > Secrets and variables > Actions.
-Add two Repository Secrets:
-SONAR_TOKEN: Paste the SonarQube token you copied.
-SONAR_HOST_URL: Paste your SonarQube server URL.
-How to configure Docker Hub Credentials
-To allow the CI pipeline to build and push images to Docker Hub:
+```bash
+docker ps
+```
 
-Navigate to Settings > Secrets and variables > Actions.
-Under the Variables tab, add:
-DOCKERHUB_USERNAME: Your Docker Hub username.
-Under the Secrets tab, add:
-DOCKERHUB_TOKEN: A Personal Access Token (PAT) generated from Docker Hub.
-How to configure AWS EC2 Deployment Secrets
-To run the CD deployment on AWS EC2, add the following secrets under Settings > Secrets and variables > Actions:
+---
+
+# 2. Access the SonarQube Web Interface
+
+Make sure port **9000** is open in your AWS EC2 Security Group inbound rules.
+
+Open the following URL in your browser:
+
+```text
+http://<YOUR_EC2_PUBLIC_IP>:9000
+```
+
+### Default Login Credentials
+
+| Username | Password |
+|----------|-----------|
+| admin | admin |
+
+> **Note:** You will be prompted to change the default password after the first login.
+
+---
+
+# 3. Configure SonarQube Secrets
+
+To enable SonarQube scanning in your GitHub Actions pipeline, configure the following secrets.
+
+## Step 1: Get the Host URL
+
+- **Self-hosted SonarQube**
+
+```text
+http://<YOUR_EC2_PUBLIC_IP>:9000
+```
+
+- **SonarCloud**
+
+```text
+https://sonarcloud.io
+```
+
+---
+
+## Step 2: Generate a SonarQube Token
+
+1. Login to SonarQube.
+2. Navigate to:
+
+```text
+Profile → My Account → Security
+```
+
+3. Under **Generate Tokens**:
+   - Enter a token name.
+   - Select **User Token**.
+   - Click **Generate**.
+4. Copy the generated token.
+
+---
+
+## Step 3: Add GitHub Repository Secrets
+
+Go to:
+
+```text
+Repository → Settings → Secrets and variables → Actions
+```
+
+Create the following repository secrets:
+
+| Secret Name | Description |
+|-------------|-------------|
+| `SONAR_TOKEN` | Generated SonarQube token |
+| `SONAR_HOST_URL` | SonarQube server URL |
+
+---
+
+# 4. Configure Docker Hub Credentials
+
+To allow the CI pipeline to build and push Docker images to Docker Hub:
+
+Navigate to:
+
+```text
+Repository → Settings → Secrets and variables → Actions
+```
+
+## Repository Variables
+
+| Variable Name | Description |
+|--------------|-------------|
+| `DOCKERHUB_USERNAME` | Your Docker Hub username |
+
+## Repository Secrets
+
+| Secret Name | Description |
+|-------------|-------------|
+| `DOCKERHUB_TOKEN` | Docker Hub Personal Access Token (PAT) |
+
+> **Note:** Generate a Personal Access Token from your Docker Hub account instead of using your account password.
+
+---
+
+# 5. Configure AWS EC2 Deployment Secrets
+
+To deploy your application to AWS EC2 using GitHub Actions, add the following repository secrets:
+
+| Secret Name | Description |
+|-------------|-------------|
+| `EC2_HOST` | Public IP address or DNS of the EC2 instance |
+| `EC2_USERNAME` | SSH username of the EC2 instance (e.g., `ubuntu`, `ec2-user`) |
+| `EC2_SSH_KEY` | Private SSH key used to connect to the EC2 instance |
+| `EC2_PORT` | SSH port (default: `22`) |
+
+---
+
+# GitHub Secrets Summary
+
+| Secret Name | Purpose |
+|-------------|----------|
+| `SONAR_TOKEN` | SonarQube authentication |
+| `SONAR_HOST_URL` | SonarQube server URL |
+| `DOCKERHUB_TOKEN` | Push Docker images to Docker Hub |
+| `EC2_HOST` | EC2 server IP/DNS |
+| `EC2_USERNAME` | EC2 SSH user |
+| `EC2_SSH_KEY` | Private SSH key |
+| `EC2_PORT` | SSH port |
+
+# GitHub Variables Summary
+
+| Variable Name | Purpose |
+|--------------|----------|
+| `DOCKERHUB_USERNAME` | Docker Hub username |
+
+---
+
+## Architecture Flow
+
+```text
+Developer Pushes Code
+          │
+          ▼
+     GitHub Actions
+          │
+          ├── Lint & Test
+          ├── SonarQube Scan
+          ├── Build Docker Image
+          ├── Push Image to Docker Hub
+          └── Deploy to AWS EC2
+                    │
+                    ▼
+              Application Running
+```
 
 EC2_HOST: The public IP address or DNS name of your EC2 instance.
 EC2_USERNAME: The SSH username (e.g., ubuntu or ec2-user).
