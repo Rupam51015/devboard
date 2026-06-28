@@ -1,0 +1,24 @@
+# Goal : build and deploy the application
+name: Deploy
+on:
+  workflow_call:
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Copy .env file
+        run: cp .env.example .env
+      
+      - name: Docker Login
+        uses: docker/login-action@v4
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ sectrets.DOCKERHUB_TOKEN }}
+      
+      - name: Build and Deploy 
+        run: |
+          docker compose pull
+          docker compose up -d
