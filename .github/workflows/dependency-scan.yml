@@ -39,5 +39,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Go-vuln-report
-          path: repots/go-vuln-report.txt
+          path: go-vuln-report.txt
           retention-days: 5
