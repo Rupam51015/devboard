@@ -1,0 +1,14 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: frontend
+  namespace: devboard
+spec:
+  type: NodePort
+  selector:
+    app: devboard-frontend
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 4173
+      nodePort: 30080

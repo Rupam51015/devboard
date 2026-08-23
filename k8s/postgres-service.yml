@@ -1,0 +1,14 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: postgres
+  namespace: devboard
+spec:
+  # It will create Headless service for Postgres StatefulSet, so that each pod will have its own DNS entry.
+  clusterIP: None
+  selector:
+    app: devboard-postgres
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432

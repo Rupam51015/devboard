@@ -1,0 +1,31 @@
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: devboard-pv
+  labels:
+    app: devboard-postgres
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 500Mi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: /mnt/devboard-postgres
+
+---
+
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: devboard-pv-2
+  labels:
+    app: devboard-postgres
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 500Mi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: /mnt/devboard-postgres-2

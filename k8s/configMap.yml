@@ -1,0 +1,10 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: devboard-configmap
+  namespace: devboard
+data:
+  BACKEND_PORT: "8080"
+  POSTGRES_HOST_PORT: "5432"
+  BACKEND_HOST_PORT: "8081"
+  FRONTEND_HOST_PORT: "8080"
