@@ -1,4 +1,4 @@
-FROM golang:1.22-alpine
+FROM dhi.io/golang:1-alpine AS builder
 
 WORKDIR /app
 
@@ -12,9 +12,17 @@ COPY . .
 # Disable Go compiler and forces to compile dependency files and put outputs to devboard-backend in current location
 RUN CGO_ENABLED=0 go build -o devboard-backend .
 
+FROM alpine:3.19
+
+WORKDIR /app
+
+COPY --from=builder /app/devboard-backend ./devboard-backend
+# Ensure binary is executable
+RUN chmod +x ./devboard-backend
 # add user and group with UID 10001 and without password then give permission to /app of app user and app geoup
-RUN adduser -D -u 10001 app && chown -R app:app /app
-USER app
+RUN adduser -D -u 10001 nonroot
+USER nonroot
 
 EXPOSE 8080
+
 ENTRYPOINT ["./devboard-backend"]
