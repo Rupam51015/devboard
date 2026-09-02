@@ -16,27 +16,35 @@ pipeline{
         }
         stage("Code Build, Test & Lint"){
             parallel{
-                stage("Frontend setup, Lint & Test"){
-                    tools {nodejs "Node-24"}
-                    steps{
-                        dir('frontend'){
-                            echo "installing Frontend dependencies.."
-                            sh "npm install --legacy-peer-deps"
-                            echo "Linting the code.."
-                            sh "npm run lint"
-                            echo "Testing the Frontend code.."
-                            sh "npm run test"
+                stage("Frontend setup, Lint & Test") {
+                    steps {
+                        script {
+                            def nodeHome = tool 'Node-24'
+                            withEnv(["PATH+NODE=${nodeHome}/bin"]) {
+                                dir('frontend') {
+                                    echo "installing Frontend dependencies.."
+                                    sh "npm install --legacy-peer-deps"
+                                    echo "Linting the code.."
+                                    sh "npm run lint"
+                                    echo "Testing the Frontend code.."
+                                    sh "npm run test"
+                                }
+                            }
                         }
                     }
                 }
-                stage("Backend setup, Lint & Test"){
-                    tools {go "Go-1.23"}
-                    steps{
-                        dir('backend'){
-                            echo "Running Go Vetting.."
-                            sh "go vet ./..."
-                            echo "Running Go Formatting.."
-                            sh "go fmt ./..."
+                stage("Backend setup, Lint & Test") {
+                    steps {
+                        script {
+                            def goHome = tool 'Go-1.23'
+                            withEnv(["PATH+GO=${goHome}/bin"]) {
+                                dir('backend') {
+                                    echo "Running Go Vetting.."
+                                    sh "go vet ./..."
+                                    echo "Running Go Formatting.."
+                                    sh "go fmt ./..."
+                                }
+                            }
                         }
                     }
                 }
@@ -58,10 +66,14 @@ pipeline{
                 }
                 stage("Dependency Scanning-Frontend"){
                     steps{
-                        tools {nodejs "Node-24"}
-                        dir("frontend"){
-                            echo "Running Dependecy scanning.."
-                            sh "npm audit || true"
+                        script{
+                            def nodeHome = tool "Node-24"
+                            withEnv(["PATH+NODE=${nodeHome}/bin"]) {
+                                dir("frontend"){
+                                    echo "Running Dependecy scanning.."
+                                    sh "npm audit || true"
+                                }
+                            }
                         }
                     }
                 }
@@ -128,17 +140,19 @@ pipeline{
             steps{
                 sh "docker pull aquasec/trivy:latest"
                 echo "Vulenrability Scanning for frontend image.."
-                sh """docker run --rm \
+                sh '''
+                    docker run --rm \
                     -v /var/run/docker.sock:/var/run/docker.sock \
-                    -v \${WORKSPACE}/.cache/trivy:/root/.cache/ \
-                    aquasec/trivy:latest image --exit-code 0 --severity HIGH,CRITICAL ${FRONTEND_IMAGE}:latest
-                """
+                    -v \$WORKSPACE/.cache/trivy:/root/.cache/ \
+                    aquasec/trivy:latest image --exit-code 0 --severity HIGH,CRITICAL devboard-frontend:latest
+                '''
                 echo "Vulnerability scanning for backend image.."
-                sh """docker run --rm \
+                sh '''
+                    docker run --rm \
                     -v /var/run/docker.sock:/var/run/docker.sock \
-                    -v \${WORKSPACE}/.cache/trivy:/root/.cache/ \
-                    aquasec/trivy:latest image --exit-code 0 --severity HIGH,CRITICAL ${BACKEND_IMAGE}:latest
-                """
+                    -v \$WORKSPACE/.cache/trivy:/root/.cache/ \
+                    aquasec/trivy:latest image --exit-code 0 --severity HIGH,CRITICAL devboard-backend:latest
+                '''
             }
         }
         stage("Docker Push"){
