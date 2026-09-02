@@ -75,7 +75,7 @@ pipeline{
                                 golang:1.23-alpine \
                                 sh -c "go install golang.org/x/vuln/cmd/govulncheck@latest && /go/bin/govulncheck ./... > go-vuln-report.txt" || true
                             '''
-                        archiveArtifacts artifacts: "backend/go-vuln-report.txt", fingerprint: true
+                            archiveArtifacts artifacts: "go-vuln-report.txt", fingerprint: true
                         }
                     }
                 }
