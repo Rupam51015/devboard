@@ -2,7 +2,7 @@
 pipeline{
     agent { label "dev"};
     environment{
-        REGISTRY_CREDENTIALS= "dockerHub-CredentialsId"
+        REGISTRY_CREDENTIALS= "CredentialsId"
         FRONTEND_IMAGE= "devboard-frontend"
         BACKEND_IMAGE= "devboard-backend"
     }
@@ -10,7 +10,7 @@ pipeline{
         stage("Code clone"){
             steps{
                 script{
-                    clone("https://github.com/Rupam51015/devboard.git", "jenkins")
+                    clone("https://github.com/Rupam51015/devboard.git", "jenkins", "${REGISTRY_CREDENTIALS}")
                 }
             }
         }
