@@ -68,13 +68,14 @@ pipeline{
                     steps{
                         dir("backend") {
                             echo "Installing latest govulncheck binary locally..."
-                            sh """docker run --rm \
+                            sh '''
+                                docker run --rm \
                                 -v "$(pwd)":/app \
                                 -w /app \
                                 golang:1.23-alpine \
                                 sh -c "go install golang.org/x/vuln/cmd/govulncheck@latest && /go/bin/govulncheck ./... > go-vuln-report.txt" || true
-                            """
-                            archiveArtifacts artifacts: "backend/go-vuln-report.txt", fingerprint: true
+                            '''
+                        archiveArtifacts artifacts: "backend/go-vuln-report.txt", fingerprint: true
                         }
                     }
                 }
