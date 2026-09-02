@@ -1,10 +1,145 @@
 @Library('jenkins-shared-library') _
 pipeline{
-    agent { label "dev"}:
+    agent { label "dev"};
+    environment{
+        REGISTRY_CREDENTIALS= "dockerHub-CredentialsId"
+        FRONTEND_IMAGE= "devboard-frontend"
+        BACKEND_IMAGE= "devboard-backend"
+    }
     stages{
         stage("Code clone"){
             steps{
-                clone
+                script{
+                    clone("https://github.com/Rupam51015/devboard.git", "jenkins")
+                }
+            }
+        }
+        stage("Code Build, Test & Lint"){
+            parallel{
+                stage("Frontend setup, Lint & Test"){
+                    tools {nodejs "Node-24"}
+                    steps{
+                        dir('frontend'){
+                            echo "installing Frontend dependencies.."
+                            sh "npm install --legacy-peer-deps"
+                            echo "Linting the code.."
+                            sh "npm run lint"
+                            echo "Testing the Frontend code.."
+                            sh "npm run test"
+                        }
+                    }
+                }
+                stage("Backend setup, Lint & Test"){
+                    tools {go "go-1.23"}
+                    steps{
+                        dir('backend'){
+                            echo "Running Go Vetting.."
+                            sh "go vet ./..."
+                            echo "Running Go Formatting.."
+                            sh "go fmt ./..."
+                        }
+                    }
+                }
+            }
+        }
+        stage("Global Security Pre-Checks"){
+            parallel{
+                stage("Secret Scanning"){
+                    steps{
+                        echo "Running GitLeaks scanning.."
+                        sh "gitleaks detect --verbose --source=."
+                    }
+                }
+                stage("Dependency Scanning-Frontend"){
+                    steps{
+                        dir('frontend'){
+                            echo "Running Dependecy scanning.."
+                            sh 'npm audit || true'
+                        }
+                    }
+                }
+                stage("Dependency Scanning-Backend"){
+                    steps{
+                        dir('backend'){
+                            sh 'govulncheck ./... > go-vuln-report.txt || true'
+                            archiveArtifacts artifacts: 'go-vuln-report.txt', fingerprint: true
+                        }
+                    }
+                }
+            }
+        }
+        stage("SonarQube Analysis"){
+            steps{
+                withSonarQubeEnv("SonarQube-server"){
+                    echo "SonarQube Scanning.."
+                    sh "sonar-scanner"
+                }
+            }
+        }
+        stage("Docker Build"){
+            parallel{
+                stage("Frontend"){
+                    steps{
+                        echo "Building docker image.."
+                        docker_build(
+                            imageName : "devboard-frontend",
+                            imageTag : "latest",
+                            fileName : "./frontend/Dockerfile",
+                            context : "./frontend"
+                        )
+                    }                    
+                }
+                stage("Backend"){
+                    steps{
+                        echo "Building docker image.."
+                        docker_build(
+                            imageName : "devboard-backend",
+                            imageTag : "latest",
+                            fileName : "./backend/Dockerfile",
+                            context : "./backend"
+                        )
+                    }
+                }
+            }
+        }
+        stage("Trivy Scanning"){
+            steps{
+                sh 'docker pull aquasec/trivy:latest'
+                echo "Vulenrability Scanning for frontend image.."
+                sh """docker run --rm \
+                    -v /var/run/docker.sock:/var/run/docker.sock \
+                    -v \${WORKSPACE}/.cache/trivy:/root/.cache/ \
+                    aquasec/trivy:latest image --exit-code 0 --severity HIGH,CRITICAL ${FRONTEND_IMAGE}:latest
+                """
+                echo "Vulnerability scanning for backend image.."
+                sh """docker run --rm \
+                    -v /var/run/docker.sock:/var/run/docker.sock \
+                    -v \${WORKSPACE}/.cache/trivy:/root/.cache/ \
+                    aquasec/trivy:latest image --exit-code 0 --severity HIGH,CRITICAL ${BACKEND_IMAGE}:latest
+                """
+            }
+        }
+        stage("Docker Push"){
+            parallel{
+                stage("Frontend"){
+                    steps(
+                        echo "Pushing frontend image to repository"
+                        docker_push("${REGISTRY_CREDENTIALS}", "${FRONTEND_IMAGE}")
+                    )
+                }
+                stage("Backend"){
+                    steps{
+                        echo "Pushing frontend image to repository"
+                        docker_push("${REGISTRY_CREDENTIALS}", "${BACKEND_IMAGE}")
+                    }
+                }
+            }
+        }
+        stage("Deploy"){
+            steps{
+                echo "Dyployed Devboard app"
+                sh "docker compose pull"
+                sh "docker compose up -d"
             }
         }
     }
