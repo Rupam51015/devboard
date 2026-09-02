@@ -73,7 +73,7 @@ pipeline{
                                 -v "$(pwd)":/app \
                                 -w /app \
                                 golang:1.23-alpine \
-                                sh -c "go install golang.org/x/vuln/cmd/govulncheck@latest && /go/bin/govulncheck . > go-vuln-report.txt" || true
+                                sh -c "go install golang.org/x/vuln/cmd/govulncheck@latest && /go/bin/govulncheck . > /app/go-vuln-report.txt" || true
                             '''
                         }
                         echo "Archiving backend vulnerability report..."
@@ -162,6 +162,12 @@ pipeline{
                 sh "docker compose pull"
                 sh "docker compose up -d"
             }
+        }
+    }
+    post{
+        always{
+            echo "Pipeline run completed. Running workspace cleanup configurations."
+            cleanWs()
         }
     }
 }
