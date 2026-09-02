@@ -66,18 +66,16 @@ pipeline{
                 }
                 stage("Dependency Scanning-Backend"){
                     steps{
-                        script {
-                            def goHome = tool 'go-1.23'
-                            withEnv(["PATH+GO=${goHome}/bin", "GOPATH=${WORKSPACE}/.go"]){
-                                dir("backend") {
-                                    echo "Installing latest govulncheck binary locally..."
-                                    sh "go install golang.org/x/vuln/cmd/govulncheck@latest"
-                                    
-                                    echo "Running vulnerability scan..."
-                                    sh "${WORKSPACE}/.go/bin/govulncheck ./... > go-vuln-report.txt || true"
-                                    archiveArtifacts artifacts: "go-vuln-report.txt", fingerprint: true
-                                }
-                            }
+                        dir("backend") {
+                            echo "Installing latest govulncheck binary locally..."
+                            sh """
+                                docker run --rm \
+                                -v "$(pwd)":/app \
+                                -w /app \
+                                golang:1.23-alpine \
+                                sh -c "go install golang.org/x/vuln/cmd/govulncheck@latest && /go/bin/govulncheck ./... > go-vuln-report.txt" || true
+                            """
+                            archiveArtifacts artifacts: "backend/go-vuln-report.txt", fingerprint: true
                         }
                     }
                 }
