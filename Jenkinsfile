@@ -68,8 +68,7 @@ pipeline{
                     steps{
                         dir("backend") {
                             echo "Installing latest govulncheck binary locally..."
-                            sh """
-                                docker run --rm \
+                            sh """docker run --rm \
                                 -v "$(pwd)":/app \
                                 -w /app \
                                 golang:1.23-alpine \
