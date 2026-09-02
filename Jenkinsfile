@@ -47,22 +47,37 @@ pipeline{
                 stage("Secret Scanning"){
                     steps{
                         echo "Running GitLeaks scanning.."
-                        sh "gitleaks detect --verbose --source=."
+                        sh '''
+                            docker run --rm \
+                            -v "$(pwd)":/path \
+                            zricethezav/gitleaks:latest \
+                            detect --source="/path" --verbose --report-path="/path/gitleaks-report.json" || true
+                        '''
+                        archiveArtifacts artifacts: 'gitleaks-report.json', allowEmptyArchive: true
                     }
                 }
                 stage("Dependency Scanning-Frontend"){
                     steps{
-                        dir('frontend'){
+                        dir("frontend"){
                             echo "Running Dependecy scanning.."
-                            sh 'npm audit || true'
+                            sh "npm audit || true"
                         }
                     }
                 }
                 stage("Dependency Scanning-Backend"){
                     steps{
-                        dir('backend'){
-                            sh 'govulncheck ./... > go-vuln-report.txt || true'
-                            archiveArtifacts artifacts: 'go-vuln-report.txt', fingerprint: true
+                        script {
+                            def goHome = tool 'go-1.23'
+                            withEnv(["PATH+GO=${goHome}/bin", "GOPATH=${WORKSPACE}/.go"]){
+                                dir("backend") {
+                                    echo "Installing latest govulncheck binary locally..."
+                                    sh "go install golang.org/x/vuln/cmd/govulncheck@latest"
+                                    
+                                    echo "Running vulnerability scan..."
+                                    sh "${WORKSPACE}/.go/bin/govulncheck ./... > go-vuln-report.txt || true"
+                                    archiveArtifacts artifacts: "go-vuln-report.txt", fingerprint: true
+                                }
+                            }
                         }
                     }
                 }
@@ -70,9 +85,14 @@ pipeline{
         }
         stage("SonarQube Analysis"){
             steps{
-                withSonarQubeEnv("SonarQube-server"){
-                    echo "SonarQube Scanning.."
-                    sh "sonar-scanner"
+                script {
+                    def sonarScannerHome = tool "sonar-scanner"
+                    withEnv(["PATH+SONAR=${sonarScannerHome}/bin"]) {
+                        withSonarQubeEnv("SonarQube-server") {
+                            echo "Executing automated SonarQube Scanner..."
+                            sh "sonar-scanner"
+                        }
+                    }
                 }
             }
         }
@@ -82,7 +102,7 @@ pipeline{
                     steps{
                         echo "Building docker image.."
                         docker_build(
-                            imageName : "devboard-frontend",
+                            imageName : "${FRONTEND_IMAGE}",
                             imageTag : "latest",
                             fileName : "./frontend/Dockerfile",
                             context : "./frontend"
@@ -93,7 +113,7 @@ pipeline{
                     steps{
                         echo "Building docker image.."
                         docker_build(
-                            imageName : "devboard-backend",
+                            imageName : "${BACKEND_IMAGE}",
                             imageTag : "latest",
                             fileName : "./backend/Dockerfile",
                             context : "./backend"
@@ -104,7 +124,7 @@ pipeline{
         }
         stage("Trivy Scanning"){
             steps{
-                sh 'docker pull aquasec/trivy:latest'
+                sh "docker pull aquasec/trivy:latest"
                 echo "Vulenrability Scanning for frontend image.."
                 sh """docker run --rm \
                     -v /var/run/docker.sock:/var/run/docker.sock \
@@ -122,10 +142,10 @@ pipeline{
         stage("Docker Push"){
             parallel{
                 stage("Frontend"){
-                    steps(
+                    steps{
                         echo "Pushing frontend image to repository"
                         docker_push("${REGISTRY_CREDENTIALS}", "${FRONTEND_IMAGE}")
-                    )
+                    }
                 }
                 stage("Backend"){
                     steps{
@@ -137,6 +157,8 @@ pipeline{
         }
         stage("Deploy"){
             steps{
+                echo "Checking for env file setup.."
+                sh "if [ ! -f .env ]; then cp .env.example .env; fi"
                 echo "Dyployed Devboard app"
                 sh "docker compose pull"
                 sh "docker compose up -d"
