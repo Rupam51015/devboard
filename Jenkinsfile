@@ -176,8 +176,11 @@ pipeline{
                 echo "Checking for env file setup.."
                 sh "if [ ! -f .env ]; then cp .env.example .env; fi"
                 echo "Dyployed Devboard app"
-                sh "docker compose pull"
-                sh "docker compose up -d"
+                withCredentials([usernamePassword(credentialsId: "${REGISTRY_CREDENTIALS}", passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')]) {
+                    sh "echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin"
+                    sh "docker compose pull"
+                    sh "docker compose up -d"
+                }
             }
         }
     }
