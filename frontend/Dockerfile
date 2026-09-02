@@ -1,5 +1,5 @@
 # Stage 1 — build the app into static files
-FROM dhi.io/node:26-dev AS build
+FROM node:24-alpine AS build
 
 WORKDIR /app
 
@@ -16,7 +16,7 @@ ENV VITE_API_URL=${VITE_API_URL}
 RUN npm run build
 
 # Stage 2 — small image that only serves the build (no nginx)
-FROM dhi.io/node:26
+FROM node:24-alpine
 
 WORKDIR /app
 
