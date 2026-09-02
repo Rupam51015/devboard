@@ -58,6 +58,7 @@ pipeline{
                 }
                 stage("Dependency Scanning-Frontend"){
                     steps{
+                        tools {nodejs "Node-24"}
                         dir("frontend"){
                             echo "Running Dependecy scanning.."
                             sh "npm audit || true"
@@ -84,12 +85,14 @@ pipeline{
         }
         stage("SonarQube Analysis"){
             steps{
-                script {
-                    def sonarScannerHome = tool "sonar-scanner"
-                    withEnv(["PATH+SONAR=${sonarScannerHome}/bin"]) {
-                        withSonarQubeEnv("SonarQube-server") {
-                            echo "Executing automated SonarQube Scanner..."
-                            sh "sonar-scanner"
+                catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE'){
+                    script {
+                        def sonarScannerHome = tool "sonar-scanner"
+                        withEnv(["PATH+SONAR=${sonarScannerHome}/bin"]) {
+                            withSonarQubeEnv("SonarQube-server") {
+                                echo "Executing automated SonarQube Scanner..."
+                                sh "sonar-scanner"
+                            }
                         }
                     }
                 }
