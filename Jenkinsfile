@@ -30,7 +30,7 @@ pipeline{
                     }
                 }
                 stage("Backend setup, Lint & Test"){
-                    tools {go "go-1.23"}
+                    tools {go "Go-1.23"}
                     steps{
                         dir('backend'){
                             echo "Running Go Vetting.."
