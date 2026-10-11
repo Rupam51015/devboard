@@ -1,37 +1,36 @@
-# Goal: To build and push docker image to docker hub
+# Build and push the three service images, tagged with the commit SHA.
 name: Docker Push
+
 on:
   workflow_call:
+    inputs:
+      image_tag:
+        description: Immutable tag to push (e.g. sha-abc1234)
+        required: true
+        type: string
+
 jobs:
-  docker-push:
-    runs-on: ubuntu-latest
+  build-push:
+    runs-on: ubuntu-latest        # amd64 — matches the EKS nodes
     strategy:
+      fail-fast: false
       matrix:
-        services: [frontend, backend]
+        folders: ['backend', 'frontend', 'ai-service']
     steps:
-      - name: Checkout code
+      - name: Checkout Code
         uses: actions/checkout@v7
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to DHI
-        uses: docker/login-action@v3
-        with:
-          registry: dhi.io
-          username: ${{ secrets.DHI_USERNAME }}
-          password: ${{ secrets.DHI_TOKEN }}
-
-      - name: Docker Login
+      - name: Docker Setup [Login]
         uses: docker/login-action@v4
         with:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      
-      - name: build and push to docker hub
+
+      - name: Docker Build and Push
         uses: docker/build-push-action@v7
         with:
-          context: ./${{ matrix.services }}
-          platforms: linux/amd64,linux/arm64
+          context: ./${{ matrix.folders }}
           push: true
-          tags: ${{ vars.DOCKERHUB_USERNAME }}/devboard-${{ matrix.services }}:latest
+          tags: |
+            ${{ vars.DOCKERHUB_USERNAME }}/devboard-${{ matrix.folders }}:${{ inputs.image_tag }}
+            ${{ vars.DOCKERHUB_USERNAME }}/devboard-${{ matrix.folders }}:latest

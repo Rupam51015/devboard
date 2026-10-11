@@ -4,6 +4,6 @@ metadata:
   namespace: devboard
   name: developer-role
 rules:
-- apiGroups: [""]
-  resources: ["services", "persistentvolumeclaims", "pods"]
-  verbs: ["*"]
+- apiGroups: ["", "apps", "extensions"]
+  resources: ["services", "persistentvolumeclaims", "pods", "deployments"]
+  verbs: ["get", "list", "watch","delete"]

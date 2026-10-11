@@ -46,14 +46,20 @@ spec:
                   key: BACKEND_PORT
           resources:
             requests:
-              cpu: "100m"
-              memory: "128Mi"
+              cpu: "10m"
+              memory: "64Mi"
             limits:
-              cpu: "300m"
-              memory: "256Mi"
+              cpu: "250m"
+              memory: "192Mi"
+          readynessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /health
               port: 8080
-            initialDelaySeconds: 45
+            initialDelaySeconds: 25
             periodSeconds: 10

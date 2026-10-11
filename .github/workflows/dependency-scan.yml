@@ -41,3 +41,22 @@ jobs:
           name: Go-vuln-report
           path: go-vuln-report.txt
           retention-days: 5
+          
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: pip-audit
+        continue-on-error: true
+        run: |
+          pip install pip-audit
+          pip-audit -r ai-service/requirements.txt | tee reports/ai-pip-audit.txt
+
+      - name: Upload Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-scan-report
+          path: reports/
+          retention-days: 5
