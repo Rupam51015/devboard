@@ -35,17 +35,17 @@ jobs:
   code-quality:
     uses: ./.github/workflows/code-quality.yml
   secret-scanning:
-    uses: ./.github/workflows/secret-scanning.yml
+    uses: ./.github/workflows/secret-scan.yml
   dependency-checks:
     uses: ./.github/workflows/dependency-scan.yml
   docker-checks:
-    uses: ./.github/workflows/docker-scans.yml
+    uses: ./.github/workflows/docker-scan.yml
     secrets: inherit
   sonar-qube:
     uses: ./.github/workflows/sonar-scan.yml
     secrets: inherit
   code-tests:
-    uses: ./.github/workflows/code-tests.yml
+    uses: ./.github/workflows/code-test.yml
 
   # ---- Build & push images (push events only, after every gate passes) ----
   docker-push:
