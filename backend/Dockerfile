@@ -14,11 +14,8 @@ WORKDIR /app
 
 COPY --from=builder /app/devboard-backend ./devboard-backend
 
-# Ensure binary is executable
-RUN chmod +x ./devboard-backend
-
-# DHI image runs as nonroot by default
-RUN adduser -D -u 10001 nonroot
+RUN chmod +x ./devboard-backend && \
+    adduser -D -u 10001 nonroot
 USER nonroot
 
 EXPOSE 8080
