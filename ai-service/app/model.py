@@ -12,7 +12,7 @@ Free & self-hosted here: no API key required.
 import json
 import logging
 import os
-from typing import Iterable
+from typing import Iterable, Optional
 
 import httpx
 
@@ -28,6 +28,8 @@ MODEL_NAME = os.environ.get("MODEL_NAME", "llama3.2:1b")
 # Optional: set MODEL_API_KEY to talk to a hosted OpenAI-compatible provider
 # (Groq, Gemini, etc.). Left empty for self-hosted Ollama.
 MODEL_API_KEY = os.environ.get("MODEL_API_KEY", "")
+
+_DONE_SENTINEL = "[DONE]"
 
 
 def _auth_headers() -> dict:
@@ -67,6 +69,37 @@ def check_model_runner() -> dict:
         }
 
 
+def _handle_stream_error(r: httpx.Response) -> str:
+    """Extract and log the upstream error response body."""
+    try:
+        snippet = r.read().decode("utf-8", errors="replace")[:512]
+    except Exception:
+        snippet = "<could not read body>"
+    log.error("upstream model error %s: %s", r.status_code, snippet)
+    return f"[model-error status={r.status_code}]"
+
+
+def _extract_chunk_content(raw_line: str) -> Optional[str]:
+    """Parse an SSE line and return the chunk text, or a sentinel string."""
+    if not raw_line or not raw_line.startswith("data: "):
+        return None
+    
+    data = raw_line[6:]
+    if data == _DONE_SENTINEL:
+        return _DONE_SENTINEL
+        
+    try:
+        obj = json.loads(data)
+    except json.JSONDecodeError:
+        return None
+        
+    choices = obj.get("choices") or []
+    if not choices:
+        return None
+        
+    return choices[0].get("delta", {}).get("content")
+
+
 def stream_chat(messages: list[dict]) -> Iterable[str]:
     """Stream OpenAI-style chat completions. Yields decoded text chunks."""
     payload = {
@@ -76,36 +109,22 @@ def stream_chat(messages: list[dict]) -> Iterable[str]:
         "temperature": 0.4,
     }
 
-    with httpx.Client(timeout=httpx.Timeout(300.0, connect=10.0)) as client:
-        with client.stream(
+    with (
+        httpx.Client(timeout=httpx.Timeout(300.0, connect=10.0)) as client,
+        client.stream(
             "POST",
             f"{MODEL_API_BASE}/chat/completions",
             json=payload,
             headers=_auth_headers(),
-        ) as r:
-            if r.status_code != 200:
-                try:
-                    snippet = r.read().decode("utf-8", errors="replace")[:512]
-                except Exception:
-                    snippet = "<could not read body>"
-                log.error("upstream model error %s: %s", r.status_code, snippet)
-                yield f"[model-error status={r.status_code}]"
+        ) as r,
+    ):
+        if r.status_code != 200:
+            yield _handle_stream_error(r)
+            return
+
+        for raw in r.iter_lines():
+            chunk = _extract_chunk_content(raw)
+            if chunk == _DONE_SENTINEL:
                 return
-            for raw in r.iter_lines():
-                if not raw:
-                    continue
-                if raw.startswith("data: "):
-                    data = raw[6:]
-                    if data == "[DONE]":
-                        return
-                    try:
-                        obj = json.loads(data)
-                    except json.JSONDecodeError:
-                        continue
-                    choices = obj.get("choices") or []
-                    if not choices:
-                        continue
-                    delta = choices[0].get("delta") or {}
-                    chunk = delta.get("content")
-                    if chunk:
-                        yield chunk
+            if chunk:
+                yield chunk
