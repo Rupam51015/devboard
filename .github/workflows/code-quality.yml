@@ -41,3 +41,13 @@ jobs:
       - name: go fmt
         run: go fmt
         working-directory: ./backend
+        
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run Ruff
+        run: |
+          pip install ruff
+          ruff check ai-service

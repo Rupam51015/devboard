@@ -7,7 +7,7 @@ metadata:
     app: devboard-postgres
 spec:
   serviceName: postgres
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: devboard-postgres
@@ -37,6 +37,8 @@ spec:
             secretKeyRef:
               name: devboard-secrets
               key: POSTGRES_DB
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
         readinessProbe:
           exec:
             command: ["sh","-c","pg_isready -U $(POSTGRES_USER) -d $(POSTGRES_DB)"]
@@ -56,8 +58,8 @@ spec:
   - metadata:
       name: data
     spec:
-      storageClassName: manual
+      storageClassName: gp2
       accessModes: ["ReadWriteOnce"]
       resources:
         requests:
-          storage: 500Mi
+          storage: 1Gi
