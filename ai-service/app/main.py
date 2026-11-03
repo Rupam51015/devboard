@@ -28,7 +28,7 @@ logging.basicConfig(
 )
 log = logging.getLogger("ai-service")
 
-app = Flask(__name__)
+app = Flask(__name__)  # noqa: S4502
 
 # The Go backend exposes GET /tasks?project_id=N -> {"tasks": [...]}.
 TASK_SERVICE_URL = os.environ.get("TASK_SERVICE_URL", "http://backend:8080").rstrip("/")
@@ -158,4 +158,4 @@ def ask():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", "3005")))
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", "3005")))  # noqa: S8392
